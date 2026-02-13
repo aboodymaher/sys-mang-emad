@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { MachineWork, WarehouseStock, FabricModel, MaterialType, MaterialSize, ProductionEntry } from '../types';
 import Modal from '../components/Modal';
-import { PlusCircle, AlertTriangle, Trash2, Edit, CheckSquare, Square, Trash, Plus, Search, ArrowLeft, Cpu, History, Layers } from 'lucide-react';
+import { PlusCircle, AlertTriangle, Trash2, Edit, CheckSquare, Square, Trash, Plus, Search, ArrowLeft, Cpu, History, Layers, Palette } from 'lucide-react';
 
 interface Props {
   stocks: WarehouseStock[];
@@ -12,6 +12,28 @@ interface Props {
   machines: MachineWork[];
   setMachines: React.Dispatch<React.SetStateAction<MachineWork[]>>;
 }
+
+const colorPalette = [
+  { name: 'أبيض', value: '#FFFFFF', border: true },
+  { name: 'سمني', value: '#F5F5DC' },
+  { name: 'أسود 1', value: '#1A1A1A' },
+  { name: 'أسود 2', value: '#000000' },
+  { name: 'بيج فاتح', value: '#E8D5B7' },
+  { name: 'بيج غامق', value: '#966F33' },
+  { name: 'كافيه فاتح', value: '#C19A6B' },
+  { name: 'كافيه غامق', value: '#4B3621' },
+  { name: 'أصفر فاتح', value: '#FFFACD' },
+  { name: 'أصفر غامق', value: '#FFD700' },
+  { name: 'لبني فاتح', value: '#ADD8E6' },
+  { name: 'لبني غامق', value: '#00008B' },
+  { name: 'روز فاتح', value: '#FFB6C1' },
+  { name: 'روز غامق', value: '#E75480' },
+  { name: 'كشمير', value: '#D1B399' },
+  { name: 'جينز', value: '#5D77A3' },
+  { name: 'تفاحي', value: '#8DB600' },
+  { name: 'زيتي', value: '#4B5320' },
+  { name: 'كاكي', value: '#C3B091' },
+];
 
 const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, machines, setMachines }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,7 +49,7 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
 
   const [entries, setEntries] = useState<ProductionEntry[]>([
     {
-      raw: { type: 'عجينة', size: 24, quantity: 1 },
+      raw: { type: 'عجينة', size: 24, color: '', quantity: 1 },
       produced: { modelId: '', quantity: 0, price: 0 }
     }
   ]);
@@ -39,7 +61,7 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
       date: new Date().toLocaleDateString('ar-EG')
     });
     setEntries([{
-      raw: { type: 'عجينة', size: 24, quantity: 1 },
+      raw: { type: 'عجينة', size: 24, color: '', quantity: 1 },
       produced: { modelId: '', quantity: 0, price: 0 }
     }]);
     setIsModalOpen(true);
@@ -56,7 +78,7 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
   };
 
   const addEntry = () => setEntries([...entries, {
-    raw: { type: 'عجينة', size: 24, quantity: 1 },
+    raw: { type: 'عجينة', size: 24, color: '', quantity: 1 },
     produced: { modelId: '', quantity: 0, price: 0 }
   }]);
 
@@ -79,35 +101,32 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
   };
 
   const handleSaveWork = () => {
-    if (!mainInfo.machineName || entries.some(e => !e.produced.modelId)) {
-      setError('يرجى التأكد من ملء اسم المكنة واختيار الموديلات لكل سطر إنتاج');
+    if (!mainInfo.machineName || entries.some(e => !e.produced.modelId || !e.raw.color)) {
+      setError('يرجى التأكد من ملء اسم المكنة واختيار الموديلات والألوان لكل سطر إنتاج');
       return;
     }
 
     const newRequiredRaw: Record<string, number> = {};
     entries.forEach(e => {
-      const key = `${e.raw.type}-${e.raw.size}`;
+      const key = `${e.raw.type}-${e.raw.size}-${e.raw.color}`;
       newRequiredRaw[key] = (newRequiredRaw[key] || 0) + Number(e.raw.quantity);
     });
 
     if (!editingId) {
-      // Logic for adding new record
       for (const [key, qty] of Object.entries(newRequiredRaw)) {
-        const [type, size] = key.split('-');
-        const targetStock = stocks.find(s => s.type === type && s.size === parseInt(size));
+        const [type, size, color] = key.split('-');
+        const targetStock = stocks.find(s => s.type === type && s.size === parseInt(size) && s.color === color);
         if (!targetStock || targetStock.count < qty) {
-          setError(`الرصيد في المخزن غير كافٍ للنوع ${type} مقاس ${size}`);
+          setError(`الرصيد في المخزن غير كافٍ للنوع ${type} مقاس ${size} لون ${color}`);
           return;
         }
       }
 
-      // Update Warehouse Stocks
       setStocks(prev => prev.map(s => {
-        const key = `${s.type}-${s.size}`;
+        const key = `${s.type}-${s.size}-${s.color}`;
         return newRequiredRaw[key] ? { ...s, count: s.count - newRequiredRaw[key] } : s;
       }));
 
-      // Update Model Stocks (Add Produced)
       setModels(prev => {
         const updatedModels = [...prev];
         entries.forEach(e => {
@@ -127,33 +146,28 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
       };
       setMachines([newWork, ...machines]);
     } else {
-      // Logic for editing (Revert old stock and apply new stock)
       const oldWork = machines.find(m => m.id === editingId);
       if (oldWork) {
-        // 1. Revert Warehouse
         setStocks(prev => {
-          let revertStocks = prev.map(s => {
-            const matchingOldEntries = oldWork.entries.filter(e => e.raw.type === s.type && e.raw.size === s.size);
-            const totalRevert = matchingOldEntries.reduce((sum, e) => sum + e.raw.quantity, 0);
-            return totalRevert > 0 ? { ...s, count: s.count + totalRevert } : s;
+          let revertStocks = [...prev];
+          oldWork.entries.forEach(e => {
+            const idx = revertStocks.findIndex(s => s.type === e.raw.type && s.size === e.raw.size && s.color === e.raw.color);
+            if(idx !== -1) revertStocks[idx].count += e.raw.quantity;
+            else revertStocks.push({ type: e.raw.type, size: e.raw.size, color: e.raw.color, count: e.raw.quantity });
           });
           
-          // Deduct New
           return revertStocks.map(s => {
-            const key = `${s.type}-${s.size}`;
+            const key = `${s.type}-${s.size}-${s.color}`;
             return newRequiredRaw[key] ? { ...s, count: s.count - newRequiredRaw[key] } : s;
           });
         });
 
-        // 2. Revert & Apply Models
         setModels(prev => {
           let updatedModels = [...prev];
-          // Subtract old
           oldWork.entries.forEach(e => {
             const idx = updatedModels.findIndex(m => m.id === e.produced.modelId);
             if (idx !== -1) updatedModels[idx].stockCount -= e.produced.quantity;
           });
-          // Add new
           entries.forEach(e => {
             const idx = updatedModels.findIndex(m => m.id === e.produced.modelId);
             if (idx !== -1) updatedModels[idx].stockCount += Number(e.produced.quantity);
@@ -191,6 +205,8 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
     });
     return machineMatch || modelMatch;
   });
+
+  const getColorValue = (name: string) => colorPalette.find(c => c.name === name)?.value || '#CCCCCC';
 
   return (
     <div className="animate-in fade-in duration-500 pb-20">
@@ -284,14 +300,12 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
                           const model = models.find(m => m.id === entry.produced.modelId);
                           return (
                             <div key={idx} className="flex items-center gap-4 text-sm bg-gray-50/80 px-4 py-2.5 rounded-xl border border-gray-100 shadow-sm">
-                              {/* Raw Material on the Right (First in RTL) */}
                               <div className="flex items-center gap-2">
                                 <span className="font-black text-indigo-600 text-base">{entry.raw.quantity}</span>
                                 <span className="text-gray-400 font-bold">{entry.raw.type} ({entry.raw.size})</span>
+                                <div className="w-3 h-3 rounded shadow-inner" style={{ backgroundColor: getColorValue(entry.raw.color) }} />
                               </div>
-                              {/* Arrow pointing to Production (Left in RTL) */}
                               <ArrowLeft className="w-5 h-5 text-indigo-400 font-black" />
-                              {/* Production on the Left */}
                               <div className="flex items-center gap-2">
                                 <span className="font-black text-green-600 text-base">{entry.produced.quantity}</span>
                                 <span className="text-gray-700 font-black">{model?.name || '---'}</span>
@@ -315,13 +329,7 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
         </div>
       </div>
 
-      {/* Modal is already customized in previous versions, keeping the large comfortable style */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={editingId ? "تعديل سجل تشغيل" : "إضافة شغل مكنة جديد"}
-        maxWidth="3xl"
-      >
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "تعديل سجل تشغيل" : "إضافة شغل مكنة جديد"} maxWidth="4xl">
         <div className="space-y-8">
           {error && (
             <div className="bg-red-50 text-red-600 p-5 rounded-3xl flex items-center gap-4 text-md font-black border border-red-100 animate-in slide-in-from-top-4 duration-300">
@@ -362,7 +370,7 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
             <div className="flex justify-between items-center border-b border-gray-100 pb-4">
               <h5 className="text-xl font-black text-gray-800 flex items-center gap-3">
                 <Layers className="w-6 h-6 text-indigo-500" />
-                تفاصيل العمليات (خام + إنتاج)
+                تفاصيل العمليات
               </h5>
               <button 
                 onClick={addEntry} 
@@ -374,107 +382,146 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
             </div>
 
             <div className="space-y-6">
-              {entries.map((entry, index) => (
-                <div key={index} className="bg-gray-50/50 rounded-[2rem] p-8 border-2 border-gray-100 relative hover:border-indigo-200 transition-all shadow-sm">
-                  <button 
-                    onClick={() => removeEntry(index)} 
-                    disabled={entries.length === 1} 
-                    className="absolute -top-3 -left-3 bg-white text-red-500 p-3 rounded-2xl hover:bg-red-50 disabled:opacity-0 transition-all shadow-xl border border-gray-100 z-10 active:scale-90"
-                    title="حذف هذه العملية"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+              {entries.map((entry, index) => {
+                const availableStockColors = Array.from(new Set<string>(
+                  stocks
+                    .filter(s => s.type === entry.raw.type && s.size === entry.raw.size && s.count > 0)
+                    .map(s => s.color)
+                ));
 
-                  <div className="flex flex-col gap-10">
-                    <div className="space-y-5">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xs">١</div>
-                        <h6 className="text-sm font-black text-indigo-500 uppercase tracking-widest">المواد الخام المستهلكة</h6>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                        <div className="space-y-2">
-                          <label className="text-[10px] text-gray-400 font-black mr-1 uppercase tracking-widest">النوع</label>
-                          <select 
-                            value={entry.raw.type} 
-                            onChange={(e) => updateEntryRaw(index, 'type', e.target.value as MaterialType)}
-                            className="w-full p-4 border-2 border-white rounded-2xl bg-white text-gray-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all font-black shadow-sm"
-                          >
-                            <option value="عجينة">عجينة</option>
-                            <option value="أندي">أندي</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] text-gray-400 font-black mr-1 uppercase tracking-widest">المقاس</label>
-                          <select 
-                            value={entry.raw.size} 
-                            onChange={(e) => updateEntryRaw(index, 'size', parseInt(e.target.value) as MaterialSize)}
-                            className="w-full p-4 border-2 border-white rounded-2xl bg-white text-gray-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all font-black shadow-sm"
-                          >
-                            <option value={18}>18</option>
-                            <option value={24}>24</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] text-gray-400 font-black mr-1 uppercase tracking-widest">عدد الشكائر</label>
-                          <input
-                            type="number"
-                            placeholder="٠"
-                            value={entry.raw.quantity || ''}
-                            onChange={(e) => updateEntryRaw(index, 'quantity', parseInt(e.target.value) || 0)}
-                            className="w-full p-4 border-2 border-white rounded-2xl bg-white text-indigo-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all font-black text-lg shadow-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                return (
+                  <div key={index} className="bg-gray-50/50 rounded-[2.5rem] p-8 border-2 border-gray-100 relative hover:border-indigo-200 transition-all shadow-sm">
+                    <button 
+                      onClick={() => removeEntry(index)} 
+                      disabled={entries.length === 1} 
+                      className="absolute -top-3 -left-3 bg-white text-red-500 p-3 rounded-2xl hover:bg-red-50 disabled:opacity-0 transition-all shadow-xl border border-gray-100 z-10 active:scale-90"
+                      title="حذف هذه العملية"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
 
-                    <div className="flex items-center gap-4 opacity-30">
-                      <div className="flex-1 h-[2px] bg-indigo-300"></div>
-                      <Layers className="w-5 h-5 text-indigo-400" />
-                      <div className="flex-1 h-[2px] bg-indigo-300"></div>
-                    </div>
+                    <div className="flex flex-col gap-8">
+                      <div className="space-y-5">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xs">١</div>
+                          <h6 className="text-sm font-black text-indigo-500 uppercase tracking-widest">المواد الخام المستهلكة</h6>
+                        </div>
+                        
+                        <div className="space-y-6">
+                          {/* Row 1: Type and Size */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[10px] text-gray-400 font-black mr-1 uppercase">النوع</label>
+                              <select 
+                                value={entry.raw.type} 
+                                onChange={(e) => updateEntryRaw(index, 'type', e.target.value as MaterialType)}
+                                className="w-full p-4 border-2 border-white rounded-2xl bg-white text-gray-900 font-black shadow-sm"
+                              >
+                                <option value="عجينة">عجينة</option>
+                                <option value="أندي">أندي</option>
+                              </select>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] text-gray-400 font-black mr-1 uppercase">المقاس</label>
+                              <select 
+                                value={entry.raw.size} 
+                                onChange={(e) => updateEntryRaw(index, 'size', parseInt(e.target.value) as MaterialSize)}
+                                className="w-full p-4 border-2 border-white rounded-2xl bg-white text-gray-900 font-black shadow-sm"
+                              >
+                                <option value={18}>18</option>
+                                <option value={24}>24</option>
+                              </select>
+                            </div>
+                          </div>
 
-                    <div className="space-y-5">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-black text-xs">٢</div>
-                        <h6 className="text-sm font-black text-green-500 uppercase tracking-widest">الإنتاج المستخرج من الخام المذكور أعلاه</h6>
+                          {/* Row 2: Color Dropdown and Quantity */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                            <div className="space-y-2">
+                              <label className="text-[10px] text-gray-400 font-black mr-1 uppercase tracking-widest flex items-center gap-1">
+                                <Palette className="w-3 h-3" /> اللون المتوفر
+                              </label>
+                              <div className="relative">
+                                {/* Square preview on the RIGHT of the text (Right edge of box) */}
+                                <div 
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg border border-gray-100 shadow-sm z-10" 
+                                  style={{ backgroundColor: getColorValue(entry.raw.color) }}
+                                />
+                                <select 
+                                  value={entry.raw.color} 
+                                  onChange={(e) => updateEntryRaw(index, 'color', e.target.value)}
+                                  // pr-12 to make space for the square on the right
+                                  className={`w-full p-4 pr-12 border-2 border-white rounded-2xl bg-white text-gray-900 font-black shadow-sm ${availableStockColors.length === 0 ? 'border-red-100 text-red-400' : ''}`}
+                                >
+                                  <option value="">اختر اللون من المخزن...</option>
+                                  {availableStockColors.map(colorName => (
+                                    <option key={colorName} value={colorName}>{colorName}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] text-gray-400 font-black mr-1 uppercase">الكمية (شكارة)</label>
+                              <input
+                                type="number"
+                                placeholder="٠"
+                                value={entry.raw.quantity || ''}
+                                onChange={(e) => updateEntryRaw(index, 'quantity', parseInt(e.target.value) || 0)}
+                                className="w-full p-4 border-2 border-white rounded-2xl bg-white text-indigo-700 font-black text-xl shadow-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <div className="space-y-2 col-span-1 sm:col-span-2">
-                          <label className="text-[10px] text-gray-400 font-black mr-1 uppercase tracking-widest">الموديل المنتج</label>
-                          <select 
-                            value={entry.produced.modelId} 
-                            onChange={(e) => updateEntryProduced(index, 'modelId', e.target.value)}
-                            className="w-full p-4 border-2 border-white rounded-2xl bg-white text-gray-900 focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all font-black shadow-sm"
-                          >
-                            <option value="">اختر الموديل...</option>
-                            {models.map(m => <option key={m.id} value={m.id}>{m.name} ({m.code})</option>)}
-                          </select>
+
+                      <div className="flex items-center gap-4 opacity-30">
+                        <div className="flex-1 h-[2px] bg-indigo-300"></div>
+                        <Layers className="w-5 h-5 text-indigo-400" />
+                        <div className="flex-1 h-[2px] bg-indigo-300"></div>
+                      </div>
+
+                      <div className="space-y-5">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-black text-xs">٢</div>
+                          <h6 className="text-sm font-black text-green-500 uppercase tracking-widest">الإنتاج المستخرج</h6>
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] text-gray-400 font-black mr-1 uppercase tracking-widest">الكمية المنتجة (قطعة)</label>
-                          <input
-                            type="number"
-                            placeholder="٠"
-                            value={entry.produced.quantity || ''}
-                            onChange={(e) => updateEntryProduced(index, 'quantity', parseInt(e.target.value) || 0)}
-                            className="w-full p-4 border-2 border-white rounded-2xl bg-white text-green-700 focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all font-black text-xl shadow-sm"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] text-gray-400 font-black mr-1 uppercase tracking-widest">سعر القطعة (ج.م)</label>
-                          <input
-                            type="number"
-                            placeholder="٠"
-                            value={entry.produced.price || ''}
-                            onChange={(e) => updateEntryProduced(index, 'price', parseFloat(e.target.value) || 0)}
-                            className="w-full p-4 border-2 border-white rounded-2xl bg-white text-gray-900 focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all font-bold shadow-sm"
-                          />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <div className="space-y-2 col-span-1 sm:col-span-2">
+                            <label className="text-[10px] text-gray-400 font-black mr-1 uppercase">الموديل المنتج</label>
+                            <select 
+                              value={entry.produced.modelId} 
+                              onChange={(e) => updateEntryProduced(index, 'modelId', e.target.value)}
+                              className="w-full p-4 border-2 border-white rounded-2xl bg-white text-gray-900 focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all font-black shadow-sm"
+                            >
+                              <option value="">اختر الموديل...</option>
+                              {models.map(m => <option key={m.id} value={m.id}>{m.name} ({m.code})</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] text-gray-400 font-black mr-1 uppercase">الكمية (قطعة)</label>
+                            <input
+                              type="number"
+                              placeholder="٠"
+                              value={entry.produced.quantity || ''}
+                              onChange={(e) => updateEntryProduced(index, 'quantity', parseInt(e.target.value) || 0)}
+                              className="w-full p-4 border-2 border-white rounded-2xl bg-white text-green-700 focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all font-black text-xl shadow-sm"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] text-gray-400 font-black mr-1 uppercase tracking-widest">السعر (ج.م)</label>
+                            <input
+                              type="number"
+                              placeholder="٠"
+                              value={entry.produced.price || ''}
+                              onChange={(e) => updateEntryProduced(index, 'price', parseFloat(e.target.value) || 0)}
+                              className="w-full p-4 border-2 border-white rounded-2xl bg-white text-gray-900 focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all font-bold shadow-sm"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

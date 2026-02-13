@@ -5,6 +5,7 @@ export type MaterialSize = 18 | 24;
 export interface WarehouseStock {
   type: MaterialType;
   size: MaterialSize;
+  color: string;
   count: number;
 }
 
@@ -13,6 +14,7 @@ export interface WarehouseLog {
   date: string;
   type: MaterialType;
   size: MaterialSize;
+  color: string;
   quantity: number;
 }
 
@@ -25,13 +27,14 @@ export interface FabricModel {
   sleeveLength: number;
   sleeveWidth: number;
   neckType: string;
-  stockCount: number;
+  stockCount: number; // This represents current production stock
 }
 
 export interface ProductionEntry {
   raw: {
     type: MaterialType;
     size: MaterialSize;
+    color: string;
     quantity: number;
   };
   produced: {
@@ -46,6 +49,20 @@ export interface MachineWork {
   machineName: string;
   entries: ProductionEntry[];
   date: string;
+}
+
+export interface ProcessingEntry {
+  modelId: string;
+  quantitySent: number;
+  quantityReceived: number;
+  price: number;
+}
+
+export interface ProcessingWork {
+  id: string;
+  machineName: string;
+  date: string;
+  entries: ProcessingEntry[];
 }
 
 export interface InvoiceItem {
