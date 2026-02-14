@@ -27,7 +27,9 @@ export interface FabricModel {
   sleeveLength: number;
   sleeveWidth: number;
   neckType: string;
-  stockCount: number; // This represents current production stock
+  stockCount: number; // This represents Finished Goods (Received from Processing)
+  producedCount: number; // This represents Raw Production (Coming from Machines, waiting for Processing)
+  imageUrl?: string; // Optional image data (base64)
 }
 
 export interface ProductionEntry {
@@ -46,6 +48,7 @@ export interface ProductionEntry {
 
 export interface MachineWork {
   id: string;
+  customerId: string; // Linked to Customer.id
   machineName: string;
   entries: ProductionEntry[];
   date: string;
@@ -60,6 +63,7 @@ export interface ProcessingEntry {
 
 export interface ProcessingWork {
   id: string;
+  customerId: string; // Linked to Customer.id
   machineName: string;
   date: string;
   entries: ProcessingEntry[];
@@ -67,7 +71,7 @@ export interface ProcessingWork {
 
 export interface InvoiceItem {
   modelId: string;
-  machineName: string; // Linked to production source
+  machineName: string; 
   quantity: number;
   price: number;
 }
@@ -91,4 +95,12 @@ export interface Customer {
   phone: string;
   invoices: Invoice[];
   payments: Payment[];
+}
+
+export interface Expense {
+  id: string;
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
 }
