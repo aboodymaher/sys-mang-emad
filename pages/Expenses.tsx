@@ -13,7 +13,8 @@ import {
   TrendingDown,
   ChevronRight,
   Filter,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 
 interface Props {
@@ -154,61 +155,94 @@ const ExpensesPage: React.FC<Props> = ({ expenses, setExpenses }) => {
         </div>
       </div>
 
-      {/* Expenses Table/Log */}
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-8 border-b flex items-center gap-3">
-          <Receipt className="w-7 h-7 text-red-500" />
-          <h3 className="text-2xl font-black text-gray-800">سجل المصروفات</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-right">
-            <thead className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase tracking-widest border-b">
-              <tr>
-                <th className="px-8 py-5">التاريخ</th>
-                <th className="px-8 py-5">الفئة</th>
-                <th className="px-8 py-5">الوصف</th>
-                <th className="px-8 py-5">المبلغ</th>
-                <th className="px-8 py-5 text-center">إجراء</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredExpenses.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center text-gray-400 font-bold italic">لا توجد مصروفات مسجلة تطابق بحثك</td>
-                </tr>
-              ) : (
-                filteredExpenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-red-50/10 transition-colors group">
-                    <td className="px-8 py-5 font-bold text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-300" />
-                        {expense.date}
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter border border-gray-200">
-                        {expense.category}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 font-black text-gray-700">{expense.description}</td>
-                    <td className="px-8 py-5 text-lg font-black text-red-600">
-                      {expense.amount.toLocaleString()} <span className="text-[10px] font-bold">ج.م</span>
-                    </td>
-                    <td className="px-8 py-5 text-center">
-                      <button 
-                        onClick={() => handleDelete(expense.id)} 
-                        className="text-gray-300 hover:text-red-600 p-2 hover:bg-red-50 rounded-xl transition-all"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+     {/* Expenses Table/Log with Vertical Scrollbar */}
+<div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100">
+  
+  {/* Header */}
+  <div className="p-8 border-b flex items-center gap-3">
+    <Receipt className="w-7 h-7 text-red-500" />
+    <h3 className="text-2xl font-black text-gray-800">سجل المصروفات</h3>
+  </div>
+
+  {/* Scroll Container */}
+  <div className="h-[300px] overflow-y-auto overflow-x-auto relative">
+
+    <table className="w-full text-right border-collapse min-w-[900px]">
+      
+      {/* Table Head */}
+      <thead className="sticky top-0 z-20 bg-gray-50">
+        <tr className="text-gray-400 text-[10px] font-black uppercase tracking-widest border-b">
+          <th className="px-8 py-5">التاريخ</th>
+          <th className="px-8 py-5">الفئة</th>
+          <th className="px-8 py-5">الوصف</th>
+          <th className="px-8 py-5">المبلغ</th>
+          <th className="px-8 py-5 text-center">إجراء</th>
+        </tr>
+      </thead>
+
+      {/* Table Body */}
+      <tbody className="divide-y divide-gray-50 bg-white">
+
+        {filteredExpenses.length === 0 ? (
+          <tr>
+            <td
+              colSpan={5}
+              className="px-8 py-20 text-center text-gray-400 font-bold italic"
+            >
+              لا توجد مصروفات مسجلة تطابق بحثك
+            </td>
+          </tr>
+        ) : (
+          filteredExpenses.map((expense) => (
+            <tr
+              key={expense.id}
+              className="hover:bg-red-50/10 transition-colors group"
+            >
+              {/* Date */}
+              <td className="px-8 py-5 font-bold text-gray-500">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-300" />
+                  {expense.date}
+                </div>
+              </td>
+
+              {/* Category */}
+              <td className="px-8 py-5">
+                <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter border border-gray-200">
+                  {expense.category}
+                </span>
+              </td>
+
+              {/* Description */}
+              <td className="px-8 py-5 font-black text-gray-700">
+                {expense.description}
+              </td>
+
+              {/* Amount */}
+              <td className="px-8 py-5 text-lg font-black text-red-600">
+                {expense.amount.toLocaleString()}{" "}
+                <span className="text-[10px] font-bold">ج.م</span>
+              </td>
+
+              {/* Action */}
+              <td className="px-8 py-5 text-center">
+                <button
+                  onClick={() => handleDelete(expense.id)}
+                  className="text-gray-300 hover:text-red-600 p-2 hover:bg-red-50 rounded-xl transition-all"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </td>
+            </tr>
+          ))
+        )}
+
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="تسجيل مصروف جديد" maxWidth="3xl">
         <div className="space-y-6">
@@ -243,7 +277,7 @@ const ExpensesPage: React.FC<Props> = ({ expenses, setExpenses }) => {
 
           <div className="space-y-2">
             <label className="text-[10px] font-black text-red-400 uppercase tracking-widest block mr-2 flex items-center gap-1">
-              <Receipt className="w-3 h-3" /> وصف المصروف
+              <FileText className="w-3 h-3" /> وصف المصروف
             </label>
             <input
               type="text"
