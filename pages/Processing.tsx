@@ -29,7 +29,8 @@ import {
   History,
   Box,
   X,
-  PackageSearch
+  PackageSearch,
+  UserX
 } from 'lucide-react';
 
 interface Props {
@@ -87,8 +88,20 @@ const ProcessingPage: React.FC<Props> = ({ processing, setProcessing, models, se
       invoices: [],
       payments: []
     };
-    setCustomers([...customers, newCustomer]);
+    setCustomers(prev => [...prev, newCustomer]);
     setIsCustomerModalOpen(false);
+  };
+
+  const handleDeleteCustomer = (id: string, name: string) => {
+    if (confirm(`هل أنت متأكد من حذف المجهز "${name}" نهائياً؟ سيتم حذف جميع سجلات التشغيل والمدفوعات الخاصة به.`)) {
+      setCustomers(prev => prev.filter(c => c.id !== id));
+      setProcessing(prev => prev.filter(p => p.customerId !== id));
+      setExpandedCustomers(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
   };
 
   const handleOpenPayment = (customer: Customer) => {
@@ -168,7 +181,6 @@ const ProcessingPage: React.FC<Props> = ({ processing, setProcessing, models, se
       return;
     }
 
-    // New validation logic: check if quantitySent exceeds available producedCount (Ghair Gahiz)
     for (const entry of entries) {
       const model = models.find(m => m.id === entry.modelId);
       if (!model) continue;
@@ -295,7 +307,7 @@ const ProcessingPage: React.FC<Props> = ({ processing, setProcessing, models, se
          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
             <Search className="h-6 w-6 text-gray-400" />
          </div>
-         <input type="text" placeholder="ابحث عن ورشة مجهز..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pr-14 pl-4 py-5 rounded-[2rem] border-none shadow-sm font-bold text-xl outline-none focus:ring-4 focus:ring-indigo-50 transition-all" />
+         <input type="text" placeholder="ابحث عن ورشة مجهز..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pr-14 pl-4 py-5 rounded-[2rem] border-none shadow-sm font-bold text-xl outline-none focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
       </div>
 
       <div className="space-y-8">
@@ -315,14 +327,36 @@ const ProcessingPage: React.FC<Props> = ({ processing, setProcessing, models, se
                      <div><h3 className="text-2xl font-black text-gray-800">{customer.name}</h3><span className="text-xs text-indigo-400 font-bold tracking-widest uppercase">{customer.phone || 'بدون هاتف'}</span></div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1 lg:max-w-3xl">
-                     <div className="bg-orange-50/70 p-4 rounded-2xl border border-orange-100 flex flex-col items-center"><span className="text-[10px] font-black uppercase text-orange-400 tracking-tighter">إجمالي المرسل</span><span className="text-2xl font-black text-orange-700">{stats.totalSent}</span></div>
-                     <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-100 flex flex-col items-center"><span className="text-[10px] font-black uppercase text-blue-400 tracking-tighter">إجمالي المستلم</span><span className="text-2xl font-black text-blue-700">{stats.totalReceived}</span></div>
-                     <div className="bg-green-50/70 p-4 rounded-2xl border border-green-100 flex flex-col items-center"><span className="text-[10px] font-black uppercase text-green-400 tracking-tighter">إجمالي الحساب</span><span className="text-2xl font-black text-green-700">{stats.totalAccount.toLocaleString()}</span></div>
-                     <div className="bg-red-50/70 p-4 rounded-2xl border border-red-100 flex flex-col items-center"><span className="text-[10px] font-black uppercase text-red-400 tracking-tighter">الباقي</span><span className="text-2xl font-black text-red-700">{stats.balance.toLocaleString()}</span></div>
+                     <div className="bg-orange-50/70 p-4 rounded-2xl border border-orange-100 flex flex-col items-center text-center">
+                        <span className="text-[10px] font-black uppercase text-orange-400">إجمالي المرسل</span>
+                        <span className="text-xl font-black text-orange-700">{stats.totalSent}</span>
+                     </div>
+                     <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-100 flex flex-col items-center text-center">
+                        <span className="text-[10px] font-black uppercase text-blue-400">إجمالي المستلم</span>
+                        <span className="text-xl font-black text-blue-700">{stats.totalReceived}</span>
+                     </div>
+                     <div className="bg-green-50/70 p-4 rounded-2xl border border-green-100 flex flex-col items-center text-center">
+                        <span className="text-[10px] font-black uppercase text-green-400">إجمالي الحساب</span>
+                        <span className="text-xl font-black text-green-700">{stats.totalAccount.toLocaleString()}</span>
+                     </div>
+                     <div className="bg-red-50/70 p-4 rounded-2xl border border-red-100 flex flex-col items-center text-center">
+                        <span className="text-[10px] font-black uppercase text-red-400">الباقي</span>
+                        <span className="text-xl font-black text-red-700">{stats.balance.toLocaleString()}</span>
+                     </div>
                   </div>
                   <div className="flex gap-2">
                      <button onClick={(e) => { e.stopPropagation(); handleOpenPayment(customer); }} className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black hover:bg-green-700 transition-all shadow-lg active:scale-95">دفع</button>
-                     <button onClick={(e) => { e.stopPropagation(); handleOpenAdd(customer.id); }} className="bg-indigo-50 text-indigo-600 px-6 py-3 rounded-2xl font-black hover:bg-indigo-600 hover:text-white transition-all shadow-sm">إضافة مكنة</button>
+                     <button onClick={(e) => { e.stopPropagation(); handleOpenAdd(customer.id); }} className="bg-indigo-50 text-indigo-600 px-6 py-3 rounded-2xl font-black hover:bg-indigo-600 hover:text-white transition-all shadow-sm">مكنة</button>
+                     <button 
+                       onClick={(e) => { 
+                        e.stopPropagation(); 
+                        handleDeleteCustomer(customer.id, customer.name); 
+                       }}
+                       className="p-3 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all shadow-sm group/del"
+                       title="حذف المجهز"
+                     >
+                       <UserX className="w-6 h-6 group-hover/del:scale-110 transition-transform" />
+                     </button>
                      {expandedCustomers.has(customer.id) ? <ChevronUp className="w-6 h-6 text-indigo-300" /> : <ChevronDown className="w-6 h-6 text-indigo-300" />}
                   </div>
                 </div>

@@ -22,13 +22,23 @@ interface Props {
 }
 
 const expenseCategories = [
-  'عامة',
-  'صيانة',
+  'اكياس',
+  'شكاير',
+  'احبال',
+  'سوسته',
+  'استك',
+  'فتل',
+  'زراير',
+  'نقل (تروسيكل)',
   'كهرباء',
+  'تصليح مكوه',
+  'تصليح تجهيز',
+  'تصليح مكن تريكو',
+  'لزق',
+  'بكر مزوي',
   'رواتب',
   'إيجار',
-  'خامات إضافية',
-  'نقل ومواصلات',
+  'عامة',
   'أخرى'
 ];
 
@@ -176,7 +186,7 @@ const ExpensesPage: React.FC<Props> = ({ expenses, setExpenses }) => {
                       </div>
                     </td>
                     <td className="px-8 py-5">
-                      <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-black uppercase tracking-tighter border border-gray-200">
+                      <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter border border-gray-200">
                         {expense.category}
                       </span>
                     </td>
@@ -200,7 +210,7 @@ const ExpensesPage: React.FC<Props> = ({ expenses, setExpenses }) => {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="تسجيل مصروف جديد" maxWidth="2xl">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="تسجيل مصروف جديد" maxWidth="3xl">
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-red-400 uppercase tracking-widest block mr-2 flex items-center gap-1">
@@ -218,12 +228,12 @@ const ExpensesPage: React.FC<Props> = ({ expenses, setExpenses }) => {
             <label className="text-[10px] font-black text-red-400 uppercase tracking-widest block mr-2 flex items-center gap-1">
               <Tag className="w-3 h-3" /> تصنيف المصروف
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 bg-gray-50 p-4 rounded-3xl border border-gray-100 max-h-[250px] overflow-y-auto custom-scrollbar">
               {expenseCategories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setFormData({ ...formData, category: cat })}
-                  className={`p-3 rounded-xl border-2 text-xs font-black transition-all ${formData.category === cat ? 'bg-red-500 text-white border-red-500 shadow-md' : 'bg-white border-gray-100 text-gray-500 hover:border-red-200'}`}
+                  className={`p-3 rounded-xl border-2 text-[11px] font-black transition-all ${formData.category === cat ? 'bg-red-500 text-white border-red-500 shadow-md' : 'bg-white border-transparent text-gray-500 hover:border-red-200'}`}
                 >
                   {cat}
                 </button>

@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Customer, FabricModel, Invoice, Payment, MachineWork } from '../types';
 import Modal from '../components/Modal';
-import { PlusCircle, Users, FileText, Wallet, Phone, Trash2, Edit, CheckSquare, Square, Trash, XCircle, Search, Cpu, ArrowLeft, AlertCircle } from 'lucide-react';
+import { PlusCircle, Users, FileText, Wallet, Phone, Trash2, Edit, CheckSquare, Square, Trash, XCircle, Search, Cpu, ArrowLeft, AlertCircle, UserX } from 'lucide-react';
 
 interface Props {
   customers: Customer[];
@@ -29,16 +29,12 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
   });
   const [paymentForm, setPaymentForm] = useState({ date: new Date().toISOString().split('T')[0], amount: 0 });
 
-  // Modified logic: availability now comes strictly from "Ready" counter (stockCount)
   const machineStockOptions = useMemo(() => {
     const options: { machineName: string; modelId: string; modelName: string; available: number }[] = [];
-    
-    // Group all machines to know which machines produced which models
     const machineNames = Array.from(new Set<string>(machines.map(m => m.machineName)));
     
     machineNames.forEach(mName => {
       models.forEach(model => {
-        // Find if this machine produced this model
         const hasProduction = machines.some(m => 
           m.machineName === mName && 
           m.entries.some(e => e.produced.modelId === model.id)
@@ -49,7 +45,7 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
             machineName: mName,
             modelId: model.id,
             modelName: model.name,
-            available: model.stockCount // This is the "Ready" counter
+            available: model.stockCount
           });
         }
       });
@@ -79,13 +75,13 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
         invoices: [],
         payments: []
       };
-      setCustomers([...customers, newCustomer]);
+      setCustomers(prev => [...prev, newCustomer]);
     }
     setCustomerModal({ isOpen: false, id: null });
   };
 
-  const handleDeleteCustomer = (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا العميل وجميع سجلاته؟')) {
+  const handleDeleteCustomer = (id: string, name: string) => {
+    if (confirm(`هل أنت متأكد من حذف العميل "${name}" وجميع سجلاته المالية؟`)) {
       setCustomers(prev => prev.filter(c => c.id !== id));
       const newSelected = new Set(selectedCustomerIds);
       newSelected.delete(id);
@@ -94,7 +90,7 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
   };
 
   const handleBulkDeleteCustomers = () => {
-    if (confirm(`هل أنت متأكد من حذف ${selectedCustomerIds.size} عميل؟`)) {
+    if (confirm(`هل أنت متأكد من حذف ${selectedCustomerIds.size} عميل؟ لا يمكن التراجع عن هذه الخطوة.`)) {
       setCustomers(prev => prev.filter(c => !selectedCustomerIds.has(c.id)));
       setSelectedCustomerIds(new Set());
     }
@@ -108,8 +104,11 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
   };
 
   const toggleSelectAllCustomers = () => {
-    if (selectedCustomerIds.size === customers.length) setSelectedCustomerIds(new Set());
-    else setSelectedCustomerIds(new Set(customers.map(c => c.id)));
+    if (selectedCustomerIds.size === customers.length && customers.length > 0) {
+      setSelectedCustomerIds(new Set());
+    } else {
+      setSelectedCustomerIds(new Set(customers.map(c => c.id)));
+    }
   };
 
   const handleOpenInvoiceModal = (customerId: string, invoice: Invoice | null = null) => {
@@ -140,10 +139,8 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
 
     if (!model) return;
 
-    // Check if enough stock is "Ready" (Gahiz)
     let available = model.stockCount;
     if (invoiceModal.invoiceId) {
-       // Add back old quantity for validation if editing
        const customer = customers.find(c => c.id === invoiceModal.customerId);
        const oldInvoice = customer?.invoices.find(inv => inv.id === invoiceModal.invoiceId);
        const oldItem = oldInvoice?.items.find(i => i.modelId === modelId);
@@ -198,7 +195,6 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
       
       setCustomers(prev => prev.map(c => c.id === invoiceModal.customerId ? { ...c, invoices: [...c.invoices, newInvoice] } : c));
       
-      // Update global "Ready" stock counter
       setModels(prev => prev.map(m => m.id === modelId ? { ...m, stockCount: Math.max(0, m.stockCount - invoiceForm.quantity) } : m));
     }
     setInvoiceModal({ isOpen: false, customerId: '', invoiceId: null });
@@ -258,11 +254,11 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
         </div>
         <div className="flex flex-wrap gap-2">
           {selectedCustomerIds.size > 0 && (
-            <button onClick={handleBulkDeleteCustomers} className="flex items-center gap-2 bg-red-100 text-red-700 px-4 py-3 rounded-xl font-bold hover:bg-red-200 transition-all">
-              <Trash className="w-5 h-5" /> حذف المحدد ({selectedCustomerIds.size})
+            <button onClick={handleBulkDeleteCustomers} className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg">
+              <Trash2 className="w-5 h-5" /> حذف المحدد ({selectedCustomerIds.size})
             </button>
           )}
-          <button onClick={toggleSelectAllCustomers} className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all">
+          <button onClick={toggleSelectAllCustomers} className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all border border-gray-200">
             {selectedCustomerIds.size === customers.length && customers.length > 0 ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
             {selectedCustomerIds.size === customers.length && customers.length > 0 ? 'إلغاء التحديد' : 'تحديد الكل'}
           </button>
@@ -293,9 +289,13 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
           </div>
         ) : (
           filteredCustomers.map((customer) => (
-            <div key={customer.id} className={`bg-white p-8 rounded-[2.5rem] shadow-xl transition-all relative border-2 ${selectedCustomerIds.has(customer.id) ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-transparent'}`}>
-              <button onClick={() => toggleCustomerSelect(customer.id)} className="absolute top-6 left-6 text-indigo-600">
-                {selectedCustomerIds.has(customer.id) ? <CheckSquare className="w-7 h-7" /> : <Square className="w-7 h-7 text-gray-200" />}
+            <div key={customer.id} className={`bg-white p-8 rounded-[2.5rem] shadow-xl transition-all relative border-2 ${selectedCustomerIds.has(customer.id) ? 'border-indigo-500 ring-4 ring-indigo-50 shadow-indigo-100' : 'border-transparent'}`}>
+              <button 
+                onClick={() => toggleCustomerSelect(customer.id)} 
+                className="absolute top-6 left-6 p-2 rounded-lg hover:bg-indigo-50 transition-colors z-10"
+                title="تحديد"
+              >
+                {selectedCustomerIds.has(customer.id) ? <CheckSquare className="w-7 h-7 text-indigo-600" /> : <Square className="w-7 h-7 text-gray-200" />}
               </button>
 
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pr-12">
@@ -312,8 +312,8 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
                 </div>
                 
                 <div className="flex gap-2">
-                  <button onClick={() => handleOpenEditCustomer(customer)} className="p-3 text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white rounded-xl transition-all"><Edit className="w-5 h-5" /></button>
-                  <button onClick={() => handleDeleteCustomer(customer.id)} className="p-3 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
+                  <button onClick={() => handleOpenEditCustomer(customer)} className="p-3 text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white rounded-xl transition-all" title="تعديل"><Edit className="w-5 h-5" /></button>
+                  <button onClick={() => handleDeleteCustomer(customer.id, customer.name)} className="p-3 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-xl transition-all" title="حذف"><Trash2 className="w-5 h-5" /></button>
                   <div className="w-[1px] bg-gray-100 mx-2 self-stretch" />
                   <button onClick={() => handleOpenInvoiceModal(customer.id)} className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl text-sm font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
                     <FileText className="w-4 h-4" /> فاتورة جديدة
@@ -334,14 +334,14 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
                   <p className="text-2xl font-black text-green-700">{customer.payments.reduce((a, b) => a + b.amount, 0).toLocaleString()} <span className="text-xs">ج.م</span></p>
                 </div>
                 <div className="bg-red-50/50 p-6 rounded-3xl text-center border border-red-100">
-                  <p className="text-[10px] text-red-400 font-black uppercase mb-1">المتبقي (المديونية)</p>
+                  <p className="text-[10px] text-red-400 font-black uppercase mb-1">المتبقي</p>
                   <p className="text-3xl font-black text-red-700">{getBalance(customer).toLocaleString()} <span className="text-xs">ج.م</span></p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-white rounded-3xl p-6 border border-gray-50 shadow-inner">
-                  <h5 className="text-xs font-black text-indigo-400 mb-4 border-b pb-2 uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4" /> آخر الفواتير الصادرة</h5>
+                  <h5 className="text-xs font-black text-indigo-400 mb-4 border-b pb-2 uppercase tracking-widest flex items-center gap-2"><FileText className="w-4 h-4" /> آخر الفواتير</h5>
                   <div className="space-y-3 max-h-[200px] overflow-y-auto custom-scrollbar">
                     {customer.invoices.length === 0 ? <p className="text-center py-4 text-xs text-gray-400 italic font-bold">لم تصدر فواتير بعد</p> : 
                       customer.invoices.slice().reverse().map(inv => (
@@ -418,7 +418,7 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
                   setError(null);
                   setInvoiceForm({ ...invoiceForm, selection: e.target.value });
               }}
-              className="w-full px-5 py-4 border rounded-2xl bg-white text-gray-900 font-black outline-none focus:ring-4 focus:ring-indigo-50"
+              className="w-full px-5 py-4 border rounded-2xl bg-white text-gray-900 font-black outline-none focus:ring-4 focus:ring-indigo-100 shadow-sm"
             >
               <option value="">-- اختر من المتاح حالياً بالمخزن الجاهز --</option>
               {machineStockOptions.map((opt, i) => (
@@ -432,11 +432,11 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mr-2">الكمية المباعة</label>
-               <input type="number" placeholder="الكمية" value={invoiceForm.quantity || ''} onChange={(e) => { setError(null); setInvoiceForm({ ...invoiceForm, quantity: parseInt(e.target.value) || 0 }); }} className="w-full px-5 py-4 border rounded-2xl bg-white text-gray-900 font-black text-center text-xl outline-none focus:ring-4 focus:ring-indigo-50" />
+               <input type="number" placeholder="الكمية" value={invoiceForm.quantity || ''} onChange={(e) => { setError(null); setInvoiceForm({ ...invoiceForm, quantity: parseInt(e.target.value) || 0 }); }} className="w-full px-5 py-4 border rounded-2xl bg-white text-gray-900 font-black text-center text-xl outline-none focus:ring-4 focus:ring-indigo-100 shadow-sm" />
             </div>
             <div className="space-y-2">
                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mr-2">سعر القطعة (ج.م)</label>
-               <input type="number" placeholder="السعر" value={invoiceForm.price || ''} onChange={(e) => setInvoiceForm({ ...invoiceForm, price: parseFloat(e.target.value) || 0 })} className="w-full px-5 py-4 border rounded-2xl bg-white text-gray-900 font-black text-center text-xl outline-none focus:ring-4 focus:ring-indigo-50" />
+               <input type="number" placeholder="السعر" value={invoiceForm.price || ''} onChange={(e) => setInvoiceForm({ ...invoiceForm, price: parseFloat(e.target.value) || 0 })} className="w-full px-5 py-4 border rounded-2xl bg-white text-gray-900 font-black text-center text-xl outline-none focus:ring-4 focus:ring-indigo-100 shadow-sm" />
             </div>
           </div>
           
@@ -453,7 +453,7 @@ const CustomersPage: React.FC<Props> = ({ customers, setCustomers, models, setMo
         <div className="space-y-6">
           <div className="space-y-2">
              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mr-2">تاريخ التحصيل</label>
-             <input type="date" value={paymentForm.date} onChange={(e) => setPaymentForm({ ...paymentForm, date: e.target.value })} className="w-full px-5 py-4 border rounded-2xl bg-white text-gray-900 font-bold outline-none focus:ring-4 focus:ring-indigo-50" />
+             <input type="date" value={paymentForm.date} onChange={(e) => setPaymentForm({ ...paymentForm, date: e.target.value })} className="w-full px-5 py-4 border rounded-2xl bg-white text-gray-900 font-bold outline-none focus:ring-4 focus:ring-indigo-100" />
           </div>
           <div className="space-y-2">
              <label className="text-[10px] font-black text-green-400 uppercase tracking-widest block text-center mb-2">المبلغ المحصل</label>

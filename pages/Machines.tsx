@@ -26,7 +26,8 @@ import {
   Coins,
   Receipt,
   X,
-  Package
+  Package,
+  UserX
 } from 'lucide-react';
 
 interface Props {
@@ -112,8 +113,22 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
       invoices: [],
       payments: []
     };
-    setCustomers([...customers, newCustomer]);
+    setCustomers(prev => [...prev, newCustomer]);
     setIsCustomerModalOpen(false);
+  };
+
+  const handleDeleteCustomer = (id: string, name: string) => {
+    if (confirm(`هل أنت متأكد من حذف العميل "${name}" نهائياً؟ سيتم حذف جميع الماكينات والحسابات المرتبطة به.`)) {
+      setCustomers(prev => prev.filter(c => c.id !== id));
+      setMachines(prev => prev.filter(m => m.customerId !== id));
+      
+      // Clear from expanded if present
+      setExpandedCustomers(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
   };
 
   const handleOpenPayment = (customer: Customer) => {
@@ -397,9 +412,6 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
                       className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform cursor-pointer relative group/icon"
                     >
                       <Users className="w-8 h-8" />
-                      <div className="absolute -bottom-2 -left-2 bg-green-500 text-white rounded-full p-1 opacity-0 group-hover/icon:opacity-100 transition-opacity">
-                         <Receipt className="w-3 h-3" />
-                      </div>
                     </div>
                     <div>
                       <h3 className="text-2xl font-black text-gray-800 tracking-tight">{customer.name}</h3>
@@ -411,16 +423,16 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
 
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 lg:max-w-2xl">
                     <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 flex flex-col items-center">
-                       <span className="text-[10px] font-black text-indigo-400 uppercase">إجمالي الشكائر</span>
-                       <span className="text-xl font-black text-indigo-700">{stats.totalBags} <span className="text-[10px]">شكارة</span></span>
+                       <span className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">إجمالي الشكائر</span>
+                       <span className="text-xl font-black text-indigo-700">{stats.totalBags}</span>
                     </div>
                     <div className="bg-green-50/50 p-4 rounded-2xl border border-green-100/50 flex flex-col items-center">
-                       <span className="text-[10px] font-black text-green-400 uppercase">إجمالي الحساب</span>
-                       <span className="text-xl font-black text-green-700">{stats.totalProductionValue.toLocaleString()} <span className="text-[10px]">ج.م</span></span>
+                       <span className="text-[10px] font-black text-green-400 uppercase tracking-tighter">إجمالي الحساب</span>
+                       <span className="text-xl font-black text-green-700">{stats.totalProductionValue.toLocaleString()}</span>
                     </div>
-                    <div className="bg-red-50/50 p-4 rounded-2xl border border-red-100/50 flex flex-col items-center col-span-2 md:col-span-1">
-                       <span className="text-[10px] font-black text-red-400 uppercase">إجمالي الباقي</span>
-                       <span className="text-xl font-black text-red-700">{stats.balance.toLocaleString()} <span className="text-[10px]">ج.م</span></span>
+                    <div className="bg-red-50/50 p-4 rounded-2xl border border-red-100/50 flex flex-col items-center">
+                       <span className="text-[10px] font-black text-red-400 uppercase tracking-tighter">المتبقي</span>
+                       <span className="text-xl font-black text-red-700">{stats.balance.toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -435,7 +447,17 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
                       onClick={(e) => { e.stopPropagation(); handleOpenAddMachine(customer.id); }}
                       className="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-6 py-3 rounded-2xl font-black hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
                     >
-                      <Plus className="w-5 h-5" /> إضافة مكنة
+                      <Plus className="w-5 h-5" /> مكنة
+                    </button>
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        handleDeleteCustomer(customer.id, customer.name); 
+                      }}
+                      className="p-3 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all shadow-sm group/del"
+                      title="حذف العميل"
+                    >
+                      <UserX className="w-6 h-6 group-hover/del:scale-110 transition-transform" />
                     </button>
                     {expandedCustomers.has(customer.id) ? <ChevronUp className="w-8 h-8 text-indigo-300" /> : <ChevronDown className="w-8 h-8 text-indigo-300" />}
                   </div>
@@ -582,7 +604,6 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
 
             <div className="space-y-6">
               {entries.map((entry, index) => {
-                // Get available colors from warehouse for this specific type and size
                 const availableColors = stocks
                   .filter(s => s.type === entry.raw.type && s.size === entry.raw.size && s.count > 0)
                   .map(s => s.color);
@@ -597,7 +618,6 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
                     </button>
                     
                     <div className="grid grid-cols-1 lg:grid-cols-11 gap-8 items-center">
-                      {/* Raw Materials Column */}
                       <div className="lg:col-span-5 space-y-4">
                         <div className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase">
                           <Package className="w-4 h-4" /> الخامات المستخدمة
@@ -651,12 +671,10 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
                         </div>
                       </div>
 
-                      {/* Arrow Spacer */}
                       <div className="hidden lg:flex lg:col-span-1 justify-center">
                         <ArrowLeft className="w-8 h-8 text-gray-200" />
                       </div>
 
-                      {/* Production Column */}
                       <div className="lg:col-span-5 space-y-4">
                         <div className="flex items-center gap-2 text-xs font-black text-green-400 uppercase">
                           <TrendingUp className="w-4 h-4" /> الإنتاج الناتج
@@ -712,7 +730,6 @@ const MachinesPage: React.FC<Props> = ({ stocks, setStocks, models, setModels, m
         </div>
       </Modal>
 
-      {/* Customer Modal with white inputs */}
       <Modal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} title="إضافة عميل جديد">
         <div className="space-y-4">
            <input 
