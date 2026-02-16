@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { WarehouseStock, FabricModel, MachineWork, Customer, WarehouseLog, ProcessingWork, Expense } from './types';
 import WarehousePage from './pages/Warehouse';
@@ -83,8 +82,38 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex bg-gray-50 overflow-hidden font-['Cairo']">
-      {/* Mobile Backdrop Overlay */}
+   <div className="h-screen flex bg-gray-50 font-['Cairo']">
+
+
+      {/* Scrollbar Style Global */}
+      <style>
+        {`
+          .premium-scroll::-webkit-scrollbar {
+            width: 18px;
+          }
+
+          .premium-scroll::-webkit-scrollbar-track {
+            background: #eef2ff;
+            border-radius: 20px;
+          }
+
+          .premium-scroll::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #6366f1, #4f46e5);
+            border-radius: 20px;
+            border: 4px solid #eef2ff;
+          }
+
+          .premium-scroll::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #4f46e5, #4338ca);
+          }
+
+          .premium-scroll {
+            scrollbar-width: auto;
+            scrollbar-color: #6366f1 #eef2ff;
+          }
+        `}
+      </style>
+
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity"
@@ -92,7 +121,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Vertical Sidebar */}
       <nav className={`
         fixed inset-y-0 right-0 z-50 w-72 bg-indigo-700 text-white transform transition-transform duration-300 ease-in-out shadow-2xl
         md:relative md:translate-x-0 md:flex md:flex-col
@@ -101,7 +129,9 @@ const App: React.FC = () => {
         <div className="p-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Factory className="w-10 h-10 text-indigo-100" />
-            <h1 className="text-2xl font-black tracking-tight leading-none">إدارة<br/><span className="text-indigo-200">المصنع</span></h1>
+            <h1 className="text-2xl font-black tracking-tight leading-none">
+              إدارة<br/><span className="text-indigo-200">المصنع</span>
+            </h1>
           </div>
           <button onClick={closeSidebar} className="md:hidden p-2 hover:bg-indigo-600 rounded-xl transition-colors">
             <X className="w-6 h-6" />
@@ -126,21 +156,11 @@ const App: React.FC = () => {
             </button>
           ))}
         </div>
-
-        <div className="p-6 border-t border-indigo-600/50">
-          <div className="bg-indigo-800/50 p-4 rounded-2xl text-center">
-            <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1">حالة النظام</p>
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-xs font-bold text-indigo-100">متصل وجاهز</span>
-            </div>
-          </div>
-        </div>
       </nav>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Mobile Header */}
+     <div className="flex-1 flex flex-col min-w-0">
+
+
         <header className="md:hidden bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-2">
             <Factory className="w-6 h-6 text-indigo-600" />
@@ -154,8 +174,12 @@ const App: React.FC = () => {
           </button>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto custom-scrollbar">
-          <div className="max-w-7xl mx-auto">
+        {/* Main Content with Premium Scroll */}
+     <main className="flex-1 overflow-y-auto premium-scroll p-6 md:p-10">
+
+
+          <div className="max-w-[1400px] mx-auto">
+
             {activeTab === 'warehouse' && (
               <WarehousePage 
                 stocks={stocks} 
@@ -164,9 +188,11 @@ const App: React.FC = () => {
                 setLogs={setWarehouseLogs} 
               />
             )}
+
             {activeTab === 'models' && (
               <ModelsPage models={models} setModels={setModels} machines={machines} processing={processing} />
             )}
+
             {activeTab === 'machines' && (
               <MachinesPage 
                 stocks={stocks} 
@@ -179,6 +205,7 @@ const App: React.FC = () => {
                 setCustomers={setMachineCustomers}
               />
             )}
+
             {activeTab === 'processing' && (
               <ProcessingPage
                 processing={processing}
@@ -189,6 +216,7 @@ const App: React.FC = () => {
                 setCustomers={setProcessingCustomers}
               />
             )}
+
             {activeTab === 'customers' && (
               <CustomersPage 
                 customers={salesCustomers} 
@@ -198,14 +226,17 @@ const App: React.FC = () => {
                 machines={machines}
               />
             )}
+
             {activeTab === 'expenses' && (
               <ExpensesPage
                 expenses={expenses}
                 setExpenses={setExpenses}
               />
             )}
+
           </div>
         </main>
+
       </div>
     </div>
   );
