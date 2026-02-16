@@ -121,9 +121,11 @@ const ModelsPage: React.FC<Props> = ({ models, setModels, machines, processing }
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     m.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
+return (
+ <div className="pb-20 animate-in fade-in duration-500">
 
-  return (
-    <div className="pb-20 animate-in fade-in duration-500">
+
+     
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h2 className="text-4xl font-black text-gray-800 flex items-center gap-3">
